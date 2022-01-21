@@ -1,15 +1,15 @@
 mod camera;
+mod components;
 mod map;
 mod map_builder;
-mod components;
 mod spawner;
 mod systems;
 
 mod prelude {
     pub use bracket_lib::prelude::*;
-    pub use legion::*;
-    pub use legion::world::SubWorld;
     pub use legion::systems::CommandBuffer;
+    pub use legion::world::SubWorld;
+    pub use legion::*;
 
     pub const SCREEN_WIDTH: i32 = 80;
     pub const SCREEN_HEIGHT: i32 = 50;
@@ -17,9 +17,9 @@ mod prelude {
     pub const DISPLAY_HEIGHT: i32 = SCREEN_HEIGHT / 2;
 
     pub use crate::camera::*;
+    pub use crate::components::*;
     pub use crate::map::*;
     pub use crate::map_builder::*;
-    pub use crate::components::*;
     pub use crate::spawner::*;
     pub use crate::systems::*;
 }
@@ -29,7 +29,7 @@ use prelude::*;
 struct State {
     ecs: World,
     resources: Resources,
-    systems: Schedule
+    systems: Schedule,
 }
 
 impl State {
@@ -43,12 +43,25 @@ impl State {
         resources.insert(map_builder.map);
         resources.insert(Camera::new(map_builder.player_start));
 
+        /*
+            Spawn player
+         */
         spawn_player(&mut ecs, map_builder.player_start);
-        
+
+        /*
+            Spawn enemies
+         */
+        map_builder
+            .rooms
+            .iter()
+            .skip(1)
+            .map(|room| room.center())
+            .for_each(|pos| spawn_monster(&mut ecs, &mut rng, pos));
+
         Self {
             ecs,
             resources,
-            systems: build_scheduler()
+            systems: build_scheduler(),
         }
     }
 }
